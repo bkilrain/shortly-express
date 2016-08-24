@@ -7,18 +7,23 @@ var crypto = require('crypto');
 var User = db.Model.extend({
   
   tableName: 'users',
-
-  links: function() {
-    return this.hasMany(Link);
+  hasTimestamps: true,
+  initialize: function() {
+    this.on('creating', this.hashPassword);
   },
-
-  // initialize: function() {
-  //   console.log('<_______________________________>')
-  //   this.on('creating', function(model, attrs, options) {
-  //     console.log('model', model, 'attrsHERE', attrs, 'options', options)
-  //   });
-  // }
-
+  comparePassword: function(attemptedPassword, callback) {
+    bcrypt.compare(attemptedPassword, this.get('password'), function(err, isMatch) {
+      callback(isMatch);
+    });
+  },
+  hashPassword: function() {
+    var cipher = Promise.promisify(bcrypt.hash);
+    return cipher(this.get('password'), null, null).bind(this)
+      .then(function(hash) {
+        this.set('password', hash);
+      });
+  }
+  
 });
 
 
